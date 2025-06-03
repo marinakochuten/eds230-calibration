@@ -1,0 +1,88 @@
+---
+title: "Calibration Assignment"
+author: Marina Kochuten
+embed-resources: true
+format: html
+---
+
+```{r}
+# Load libraries
+library(tidyverse)
+library(here)
+```
+
+```{r}
+# Read in data
+msage = readRDS(here("msage.RDS"))
+
+# Source function
+source(here("compute_highflowmetrics.R"))
+```
+
+```{r}
+# Plot observations and see what metric might be interesting
+ggplot(msage) +
+    geom_line(aes(x = month, y = obs))
+```
+
+Let's use max flow in June.
+
+```{r}
+# use apply to compute for all the data
+res = msage %>% select(-date, -month, -day, -year, -wy, -obs ) %>% apply(2,FUN=compute_highflowmetrics, o=msage$obs, month=msage$month, day=msage$day, year=msage$year, wy=msage$wy)
+
+# extract information from the list
+results = as.data.frame(matrix(unlist(res), byrow=T, ncol=4))
+colnames(results)=c("annual_max_err","annual_max_cor", "high_month_err",
+              "high_month_cor")
+
+# interesting to look at range of metrics - could use this to decide on
+# acceptable values
+summary(results)
+
+# graph range of performance measures
+resultsl = results %>% gather(key="metric",value="value")
+ggplot(resultsl, aes(metric, value))+geom_boxplot()+facet_wrap(~metric, scales="free")
+```
+
+```{r}
+# pick parameter set with greater high flow month correlation
+best_param = which.max(results$high_month_cor)
+```
+
+```{r}
+# decide on "good parameter" threshold
+summary(results)
+```
+
+
+```{r}
+# first we need to be able to identify parameter sets in results
+
+ID = msage %>% select(-date, -month, -day, -year, -wy, -obs ) %>%  colnames()
+results$id = ID
+
+# now we can pick only good parameters
+# using 3rd Quartile was too strict, and there were no occurances that met the threshold for june. needed to ease up a bit on both cor and errors
+accept_par = subset(results, annual_max_cor > 0.8 & high_month_cor > 0.87 & abs(annual_max_err < 2.9) & abs(high_month_err) < 20)
+nrow(accept_par)
+
+
+# plot these to compare with observed focused on june flow
+msagel$accept = ifelse(msagel$run %in% accept_par$id, TRUE, FALSE)
+
+msagel_mth = msagel %>% select(-date,-day) %>% group_by(month, wy, run, accept) %>% summarise(str=mean(str, na.rm=T), obs=mean(obs, na.rm=T))
+
+# just june flow
+ggplot(subset(msagel_mth,  month==6 & accept),
+       aes(wy, str, group=wy)) + 
+    geom_boxplot(position="dodge") +
+  geom_point(aes(wy, obs), col="red")+labs(y="Streamflow", x="Date") +
+    theme_minimal()
+```
+
+
+
+
+
+
