@@ -50,6 +50,8 @@ ggplot(resultsl, aes(metric, value))+geom_boxplot()+facet_wrap(~metric, scales="
 best_param = which.max(results$high_month_cor)
 ```
 
+The best parameter set is V40!
+
 ```{r}
 # decide on "good parameter" threshold
 summary(results)
@@ -80,9 +82,7 @@ ggplot(subset(msagel_mth,  month==6 & accept),
   geom_point(aes(wy, obs), col="red")+labs(y="Streamflow", x="Date") +
     theme_minimal()
 ```
-
-
-
-
+This plot shows all acceptable parameters, against the observed data in red, giving an idea about model performance.
+Using max June streamflow as the metric, the model over and underpreditced roughly equally. 
 
 
