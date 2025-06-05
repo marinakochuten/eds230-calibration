@@ -4,17 +4,16 @@ format: html
 editor: visual
 ---
 
-
 ```{r, echo=TRUE, eval=TRUE}
 library(tidyverse)
 library(here)
 
-msage = readRDS(here("Data/msage.RDS"))
+msage = readRDS(here("msage.RDS"))
 #View(msage)
 
 # first rearrange so we can plot all results
 msagel = msage %>% gather(key="run",value="str", -date, -month, -day, -year, -wy,-obs)
-source(here("R/compute_lowflowmetrics.R"))
+source(here("compute_lowflowmetrics.R"))
 
 # another example using our low flow statistics
 # use apply to compute for all the data
